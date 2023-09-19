@@ -192,7 +192,8 @@ def main():
                 CallbackQueryHandler(menu.service_select_command, pattern=f'^{STEP.MENU.NEW_ORDER_SELECT_SERVICE}$'),
             ],
             STEP.MENU.NEW_ORDER_EDIT_FIELD: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, menu.edit_field_select_command)
+                MessageHandler(filters.TEXT & ~filters.COMMAND, menu.edit_field_select_command),
+                CallbackQueryHandler(menu.category_select_command, pattern=f'^{STEP.MENU.NEW_ORDER_SELECT_SERVICE}$'),
             ],
             STEP.MENU.UNBOUND: [menu_handler]
         },

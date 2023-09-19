@@ -87,7 +87,7 @@ def parse_order(d: dict) -> (str, list | None):
             right = ORDER_VALUES_DESCRIPTION[v]
         
         if k == 'charge':
-            right += f'${right}'
+            right = f'${right}'
 
         text += f'<b>{left}</b>: {right}\n'
     

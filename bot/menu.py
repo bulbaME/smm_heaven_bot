@@ -235,6 +235,7 @@ async def make_order_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
     return STEP.MENU.MAKE_ORDER
 
 async def category_select_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
     services = context.user_data['services']
     btn_menu = InlineKeyboardButton('Go Back 🔽', callback_data=STEP.MENU.NEW_ORDER_SELECT_CATEGORY)
     
@@ -280,7 +281,10 @@ async def category_select_command(update: Update, context: ContextTypes.DEFAULT_
     keyboard = InlineKeyboardMarkup(btns)
 
     msg = context.user_data['new_order_message']
-    msg = await msg.edit_text(f'<b>{category}</b>\n<b>⚙  SELECT SERVICE</b>\nYou have to select service for your new order.', reply_markup=keyboard, parse_mode=ParseMode.HTML)
+    if msg == None:
+        msg = await context.bot.send_message(chat_id, f'<b>{category}</b>\n<b>⚙  SELECT SERVICE</b>\nYou have to select service for your new order.', reply_markup=keyboard, parse_mode=ParseMode.HTML)
+    else:
+        msg = await msg.edit_text(f'<b>{category}</b>\n<b>⚙  SELECT SERVICE</b>\nYou have to select service for your new order.', reply_markup=keyboard, parse_mode=ParseMode.HTML)
     
     context.user_data['new_order_message'] = msg
     context.user_data['service'] = None
@@ -336,11 +340,11 @@ async def service_select_command(update: Update, context: ContextTypes.DEFAULT_T
 
     if 'quantity' in list(d.keys()):
         if d['quantity'] != None:
-            service_descr += f'<b>{ORDER_KEYS_DESCRIPTION["charge"]}:</b> {float(service["rate"]) * (int(d["quantity"]) / 1000)}\n'
+            service_descr += f'<b>{ORDER_KEYS_DESCRIPTION["charge"]}:</b> ${float(service["rate"]) * (int(d["quantity"]) / 1000)}\n'
 
     if 'min' in list(d.keys()) and 'max' in list(d.keys()):
         if d['min'] != None and d['max'] != None:
-            service_descr += f'<b>{ORDER_KEYS_DESCRIPTION["charge"]}:</b> {float(service["rate"]) * (int(d["min"]) / 1000)} - {float(service["rate"]) * (int(d["max"]) / 1000)}\n'
+            service_descr += f'<b>{ORDER_KEYS_DESCRIPTION["charge"]}:</b> ${float(service["rate"]) * (int(d["min"]) / 1000)} - {float(service["rate"]) * (int(d["max"]) / 1000)}\n'
 
     msg_text = f'<b>{category}</b>\n<b>{service["name"]}</b>\n{service_descr}\nTo edit your orders\' fields, just tap on them.'
 
@@ -391,11 +395,11 @@ async def send_order_conf_command(update: Update, context: ContextTypes.DEFAULT_
 
     if 'quantity' in list(d.keys()):
         if d['quantity'] != None:
-            service_descr += f'<b>{ORDER_KEYS_DESCRIPTION["charge"]}:</b> {float(service["rate"]) * (int(d["quantity"]) / 1000)}\n'
+            service_descr += f'<b>{ORDER_KEYS_DESCRIPTION["charge"]}:</b> ${float(service["rate"]) * (int(d["quantity"]) / 1000)}\n'
 
     if 'min' in list(d.keys()) and 'max' in list(d.keys()):
         if d['min'] != None and d['max'] != None:
-            service_descr += f'<b>{ORDER_KEYS_DESCRIPTION["charge"]}:</b> {float(service["rate"]) * (int(d["min"]) / 1000)} - {float(service["rate"]) * (int(d["max"]) / 1000)}\n'
+            service_descr += f'<b>{ORDER_KEYS_DESCRIPTION["charge"]}:</b> ${float(service["rate"]) * (int(d["min"]) / 1000)} - {float(service["rate"]) * (int(d["max"]) / 1000)}\n'
 
 
     msg_text = f'<b>{category}</b>\n<b>{service["name"]}</b>\n{service_descr}\n{service_options}'
