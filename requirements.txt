@@ -1,2 +1,3 @@
 pymongo[srv]
 python-telegram-bot
+python-telegram-bot[job-queue]

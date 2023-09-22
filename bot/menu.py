@@ -4,14 +4,20 @@ from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, Message
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
 import yaml
-from .db import get_user_db
+from .db import get_user_db, UserDB
 from .misc import STEP, get_user_api, parse_order, parse_error, NEW_ORDER_KEYS_DESCRIPTION, ORDER_KEYS_DESCRIPTION
 from smm_api import parse_response, parse_service_list, SERVICE_TYPES_KEYS
 
 MAX_PAGE_SIZE = 8
+SUPPORT_CHAT_ID = yaml.safe_load(open('credentials.yaml'))['tg']['support_chat_id']
+MAX_SUPPORT_APPEALS = 1
+SUPPORT_APPEAL_TIMEOUT = 21600
 
 async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
+    if update.effective_chat.type != update.effective_chat.PRIVATE:
+        return
+    
     db = get_user_db(context)
 
     if db.get_api_key() == None:
@@ -23,6 +29,7 @@ async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['new_order_category_page'] = 0
     context.user_data['new_order_service_page'] = 0
     context.user_data['services'] = None
+    context.user_data['support_message'] = None
 
     btn_track_order = InlineKeyboardButton('Track Orders 📦', callback_data=STEP.MENU.TRACK_ORDERS)
     btn_new_order = InlineKeyboardButton('Make New Order 📩', callback_data=STEP.MENU.MAKE_ORDER)
@@ -97,14 +104,24 @@ async def track_order_command(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     return STEP.MENU.TRACK_ORDERS
 
+async def add_order_cancel_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = None
+    try:
+        msg = context.user_data['add_order_message']
+        await msg.delete()
+        return STEP.MENU.TRACK_ORDERS
+    except BaseException:
+        context.user_data['orders_message'] = None
+        return await track_order_command(update, context)
+
 async def add_order_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
 
-    btn_cancel = InlineKeyboardButton('❌ Cancel', callback_data=STEP.MENU.TRACK_ORDERS)
+    btn_cancel = InlineKeyboardButton('❌ Cancel', callback_data=STEP.MENU.ADD_ORDER_CANCEL)
     keyboard = InlineKeyboardMarkup([[btn_cancel]])
 
-    await context.bot.send_message(chat_id, f'Send Order id 📦', reply_markup=keyboard)
-    context.user_data['orders_message'] = None
+    msg = await context.bot.send_message(chat_id, f'Send Order id 📦', reply_markup=keyboard)
+    context.user_data['add_order_message'] = msg
 
     return STEP.MENU.ADD_ORDER_SELECT
 
@@ -114,6 +131,8 @@ async def add_order_send_command(update: Update, context: ContextTypes.DEFAULT_T
     api = get_user_api(context)
 
     order = update.effective_message.text.strip()
+    context.user_data['orders_message'] = None
+
     data = api.order_status(order)
     data = parse_response(data)
 
@@ -410,7 +429,7 @@ async def send_order_conf_command(update: Update, context: ContextTypes.DEFAULT_
     keyboard = InlineKeyboardMarkup([[btn_conf], [btn_cancel]])
 
     msg = context.user_data['new_order_message']
-    msg = await msg.edit_text(msg_text, reply_markup=keyboard, parse_mode=ParseMode.HTML)
+    msg = await msg.edit_text(msg_text, reply_markup=keyboard, parse_mode=ParseMode.HTML, disable_web_page_preview=True)
     context.user_data['new_order_message'] = msg
 
     return STEP.MENU.SEND_ORDER_CONFIRM
@@ -654,3 +673,132 @@ async def service_prev_page_command(update: Update, context: ContextTypes.DEFAUL
         context.user_data['new_order_service_page'] = 0
 
     return await category_select_command(update, context)
+
+async def support_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    db = get_user_db(context)
+
+    appeals = db.get_support_appeal()
+
+    if appeals >= MAX_SUPPORT_APPEALS:
+        await context.bot.send_message(chat_id, '🚫 You allready have an active support appeal, please wait for our support to reach you')
+
+        return STEP.MENU.ENTRY
+
+    context.user_data['support_message_text'] = None
+
+    btn_pay = InlineKeyboardButton('Payment 💳', callback_data=500)
+    btn_speed = InlineKeyboardButton('Speed Up 💨', callback_data=500+1)
+    btn_refill = InlineKeyboardButton('Refill 🔄', callback_data=500+2)
+    btn_cancel = InlineKeyboardButton('Cancel Order 🚫', callback_data=500+3)
+    btn_other = InlineKeyboardButton('Other 💢', callback_data=500+4)
+    btn_menu = InlineKeyboardButton('Menu 🕹', callback_data=STEP.MENU.ENTRY)
+
+    keyboard = InlineKeyboardMarkup([[btn_pay], [btn_speed], [btn_refill], [btn_cancel], [btn_other], [btn_menu]])
+
+    msg = context.user_data['support_message']
+    if msg == None:
+        msg = await context.bot.send_message(chat_id, f'<b>📢  SUPPORT </b>\nSelect subject with which you need help.', reply_markup=keyboard, parse_mode=ParseMode.HTML)
+    else:
+        msg = await msg.edit_text(f'<b>📢  SUPPORT </b>\nSelect subject with which you need help.', reply_markup=keyboard, parse_mode=ParseMode.HTML)
+
+    context.user_data['support_message'] = msg
+    context.user_data['support_topic'] = None
+
+    return STEP.MENU.SUPPORT
+
+async def support_topic_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    
+    topic = context.user_data['support_topic']
+    if topic == None:
+        topic = int(update.callback_query.data) - 500
+
+    context.user_data['support_topic'] = topic
+
+    msg = context.user_data['support_message_text']
+
+    subject = ''
+    match topic:
+        case 0:
+            subject = '💳 Payment'
+        case 1:
+            subject = '💨 Speed Up'
+        case 2:
+            subject = '🔄 Refill'
+        case 3:
+            subject = '🚫 Cancel Order'
+        case _:
+            subject = '💢 Other'
+
+    btn_add_msg = InlineKeyboardButton('Add Message 💬', callback_data=STEP.MENU.SUPPORT_SET_MESSAGE)
+    if context.user_data['support_message_text'] != None:
+        btn_add_msg = InlineKeyboardButton('Edit Message 💬', callback_data=STEP.MENU.SUPPORT_SET_MESSAGE)
+
+    btn_confirm = InlineKeyboardButton('Send ✅', callback_data=STEP.MENU.SUPPORT_SEND)
+    btn_back = InlineKeyboardButton('Back 🔽', callback_data=STEP.MENU.SUPPORT)
+
+    keyboard = InlineKeyboardMarkup([[btn_add_msg], [btn_confirm, btn_back]])
+
+    msg_text = context.user_data['support_message_text']
+    if msg_text == None:
+        msg_text = ''
+
+    msg = context.user_data['support_message']
+    if msg == None:
+        msg = await context.bot.send_message(chat_id, f'<b>📢  SUPPORT APPEAL</b>\n<b>{subject}</b>\n\n{msg_text}', reply_markup=keyboard, parse_mode=ParseMode.HTML)
+    else:
+        msg = await msg.edit_text(f'<b>📢  SUPPORT APPEAL</b>\n<b>{subject}</b>\n\n{msg_text}', reply_markup=keyboard, parse_mode=ParseMode.HTML)
+
+    context.user_data['support_message'] = msg
+    context.user_data['support_subject'] = subject
+    
+    return STEP.MENU.SUPPORT_CONFIRM
+
+async def support_set_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+
+    context.user_data['support_message'] = None
+    
+    await context.bot.send_message(chat_id, 'Send Your Message 💬', )
+
+    return STEP.MENU.SUPPORT_SET_MESSAGE
+
+async def support_set_message2(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = update.effective_message.text.strip()
+
+    context.user_data['support_message_text'] = msg
+
+    return await support_topic_command(update, context)    
+
+async def support_appeal_timeout(context: ContextTypes.DEFAULT_TYPE):
+    msg = context.job.data[0]
+    user_id = context.job.data[1]
+
+    try:
+        await msg.edit_text(f'{msg.text}\n\nResolved ✅')
+        UserDB.dec_support_appeal_by_id(user_id)
+    except BaseException:
+        pass
+
+async def support_send_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    username = update.effective_user.username
+    user_id = update.effective_user.id
+
+    btn_menu = InlineKeyboardButton('Menu 🕹', callback_data=STEP.MENU.ENTRY)
+    keyboard = InlineKeyboardMarkup([[btn_menu]])
+
+    msg = context.user_data['support_message']
+    await msg.edit_text(f'Your support appeal was sent succesfully ✅\nOur support will shortly reach you', reply_markup=keyboard)
+    context.user_data['support_message'] = None
+
+    btn_resolve = InlineKeyboardButton('Resolve ✅', callback_data=12345)
+
+    keyboard = InlineKeyboardMarkup([[btn_resolve]])
+    msg = await context.bot.send_message(SUPPORT_CHAT_ID, f'@{username}\nuser_id: {user_id}\n\nSubject: {context.user_data["support_subject"]}\nMessage: {context.user_data["support_message_text"]}', reply_markup=keyboard)
+    context.job_queue.run_once(support_appeal_timeout, SUPPORT_APPEAL_TIMEOUT, data=[msg, user_id])
+
+    db = get_user_db(context)
+    db.inc_support_appeal()
+
+    return STEP.MENU.ENTRY

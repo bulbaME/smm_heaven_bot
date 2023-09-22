@@ -11,16 +11,19 @@ from . import menu
 TOKEN = yaml.safe_load(open('credentials.yaml'))['tg']['token']
 
 logging.basicConfig(
+    # filename='logs.log',
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
+    level=logging.ERROR
 )
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
+    if update.effective_chat.type != update.effective_chat.PRIVATE:
+        print(chat_id)
+        return
     db = get_user_db(context)
 
     if db.get_api_key() == None:
-        
         btn_tutorial = InlineKeyboardButton('❓ Where do I find my API key ❓', callback_data=STEP.AUTH.HELP)
         btn_api = InlineKeyboardButton('Paste API key 🔑', callback_data=STEP.AUTH.KEY_GET)
         keyboard = InlineKeyboardMarkup([[btn_tutorial], [btn_api]])
@@ -70,6 +73,8 @@ async def get_key_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def logout_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
+    if update.effective_chat.type != update.effective_chat.PRIVATE:
+        return
     db = get_user_db(context)
 
     db.set_api_key(None)
@@ -101,12 +106,31 @@ async def tutorial_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     return STEP.AUTH.AUTH
 
+async def invite_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.chat_join_request == None:
+        return
+    
+    await update.chat_join_request.approve()
+
+async def resolve_appeal(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = update.effective_message
+    user_id = msg.text.split('\n')[1]
+    user_id = int(user_id.split(':')[1])
+    
+    try:
+        await msg.edit_text(f'{msg.text}\n\nResolved ✅')
+        db.UserDB.dec_support_appeal_by_id(user_id)
+    except BaseException:
+        pass
+
 def main():
     application = ApplicationBuilder().token(TOKEN).build()
     
     start_handler = CommandHandler('start', start_command)
     logout_handler = CommandHandler('logout', logout_command)
     menu_handler = CommandHandler('menu', menu.menu_command)
+    invite_handler = MessageHandler(filters.ALL, invite_command)
+    resolve_appeal_handler = CallbackQueryHandler(resolve_appeal, pattern='^12345$')
 
     auth_conversation = ConversationHandler(
         [start_handler],
@@ -140,6 +164,7 @@ def main():
                 CallbackQueryHandler(menu.make_order_command, pattern=f'^{STEP.MENU.MAKE_ORDER}$'),
                 CallbackQueryHandler(menu.balance_command, pattern=f'^{STEP.MENU.BALANCE}$'),
                 CallbackQueryHandler(menu.change_api_command, pattern=f'^{STEP.MENU.CHANGE_API}$'),
+                CallbackQueryHandler(menu.support_command, pattern=f'^{STEP.MENU.SUPPORT}$'),
                 CallbackQueryHandler(menu.menu_command, pattern=f'^{STEP.MENU.ENTRY}$'),
             ],
             STEP.MENU.CHANGE_API: [
@@ -157,7 +182,7 @@ def main():
             ],
             STEP.MENU.ADD_ORDER_SELECT: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, menu.add_order_send_command),
-                CallbackQueryHandler(menu.track_order_command, pattern=f'^{STEP.MENU.TRACK_ORDERS}$'),
+                CallbackQueryHandler(menu.add_order_cancel_command, pattern=f'^{STEP.MENU.ADD_ORDER_CANCEL}$'),
             ],
             STEP.MENU.DELETE_ORDER_SELECT: [
                 CallbackQueryHandler(menu.delete_order_select_command, pattern=f'^(?:200[0-9]|20[1-9][0-9]|2[1-4][0-9]{{2}})$'),
@@ -195,12 +220,25 @@ def main():
                 MessageHandler(filters.TEXT & ~filters.COMMAND, menu.edit_field_select_command),
                 CallbackQueryHandler(menu.category_select_command, pattern=f'^{STEP.MENU.NEW_ORDER_SELECT_SERVICE}$'),
             ],
-            STEP.MENU.UNBOUND: [menu_handler]
+            STEP.MENU.UNBOUND: [menu_handler],
+            STEP.MENU.SUPPORT: [
+                CallbackQueryHandler(menu.support_topic_command, pattern=f'^50[0-9]$'),
+                CallbackQueryHandler(menu.menu_command, pattern=f'^{STEP.MENU.ENTRY}$'),
+                CallbackQueryHandler(menu.support_set_message, pattern=f'^{STEP.MENU.SUPPORT_SET_MESSAGE}$'),
+            ],
+            STEP.MENU.SUPPORT_CONFIRM: [
+                CallbackQueryHandler(menu.support_send_command, pattern=f'^{STEP.MENU.SUPPORT_SEND}$'),
+                CallbackQueryHandler(menu.support_set_message, pattern=f'^{STEP.MENU.SUPPORT_SET_MESSAGE}$'),
+                CallbackQueryHandler(menu.support_command, pattern=f'^{STEP.MENU.SUPPORT}$'),
+            ],
+            STEP.MENU.SUPPORT_SET_MESSAGE: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, menu.support_set_message2)
+            ]
         },
         [],
         allow_reentry=True
     )
 
-    application.add_handlers([auth_conversation, menu_conversation, logout_handler])
+    application.add_handlers([auth_conversation, menu_conversation, logout_handler, invite_handler, resolve_appeal_handler])
 
     application.run_polling()

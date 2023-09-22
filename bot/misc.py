@@ -25,6 +25,7 @@ class STEP:
         MAKE_ORDER = gci()
         TRACK_ORDERS = gci()
         ADD_ORDER = gci()
+        ADD_ORDER_CANCEL = gci()
         ADD_ORDER_SELECT = gci()
         DELETE_ORDER = gci()
         DELETE_ORDER_SELECT = gci()
@@ -40,6 +41,11 @@ class STEP:
         SEND_ORDER = gci()
         SEND_ORDER_CONFIRM = gci()
         SUPPORT = gci()
+        SUPPORT_TOPIC = gci()
+        SUPPORT_SET_MESSAGE = gci()
+        SUPPORT_SET_MESSAGE2 = gci()
+        SUPPORT_CONFIRM = gci()
+        SUPPORT_SEND = gci()
 
 NEW_ORDER_KEYS_DESCRIPTION = {
     'link': ('🔗 Link', 'Link 🔗'),

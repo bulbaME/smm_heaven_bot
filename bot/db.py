@@ -13,6 +13,7 @@ class UserDB:
                 'id': id,
                 'api_key': None,
                 'orders': [],
+                'support': 0
             })
 
     def get_api_key(self):
@@ -34,6 +35,19 @@ class UserDB:
         orders.reverse()
 
         return orders
+    
+    def dec_support_appeal(self):
+        DB.users.update_one({'id': self.id}, {'$inc': {'support': -1}})
+
+    def dec_support_appeal_by_id(id: int):
+        DB.users.update_one({'id': id}, {'$inc': {'support': -1}})
+
+    def get_support_appeal(self):
+        u = DB.users.find_one(filter={'id': self.id})
+        return u['support']
+    
+    def inc_support_appeal(self):
+        DB.users.update_one({'id': self.id}, {'$inc': {'support': 1}})
     
 def get_user_db(context: ContextTypes.DEFAULT_TYPE) -> UserDB:
     if not 'user_db' in list(context.user_data.keys()):
