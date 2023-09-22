@@ -38,7 +38,7 @@ async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     btn_change_api = InlineKeyboardButton('API key 🔑', callback_data=STEP.MENU.CHANGE_API)
     keyboard = InlineKeyboardMarkup([[btn_track_order], [btn_new_order], [btn_balance], [btn_support, btn_change_api]])
 
-    await context.bot.send_message(chat_id, f'<b>🌫  SMM-HEAVEN BOT  🌫</b>\n', parse_mode=ParseMode.HTML, reply_markup=keyboard)
+    await context.bot.send_message(chat_id, f'<b>🍃  SMM-HEAVEN BOT  🍃</b>\n', parse_mode=ParseMode.HTML, reply_markup=keyboard)
 
     return STEP.MENU.ENTRY
 
