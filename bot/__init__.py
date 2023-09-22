@@ -28,7 +28,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         btn_api = InlineKeyboardButton('Paste API key 🔑', callback_data=STEP.AUTH.KEY_GET)
         keyboard = InlineKeyboardMarkup([[btn_tutorial], [btn_api]])
 
-        await context.bot.send_message(chat_id, f'<b>🍃  SMM-HEAVEN BOT  🍃</b>\nWelcome, to continue I need your account API key', parse_mode=ParseMode.HTML, reply_markup=keyboard)
+        await context.bot.send_message(chat_id, f'<b>🌫  SMM-HEAVEN BOT  🌫</b>\nWelcome, to continue I need your account API key', parse_mode=ParseMode.HTML, reply_markup=keyboard)
     
         return STEP.AUTH.AUTH
     else:
@@ -62,7 +62,7 @@ async def get_key_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         db.set_api_key(key)
 
         commands = [
-            BotCommand('menu', 'Menu 🍃'),
+            BotCommand('menu', 'Menu 🌫'),
             BotCommand('logout', 'Logout 🚫'),
         ]
         await context.bot.set_my_commands(commands, scope=telegram.BotCommandScopeChat(chat_id))
