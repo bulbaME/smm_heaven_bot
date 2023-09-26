@@ -777,7 +777,9 @@ async def support_appeal_timeout(context: ContextTypes.DEFAULT_TYPE):
 
     try:
         await msg.edit_text(f'{msg.text}\n\nResolved ✅')
-        UserDB.dec_support_appeal_by_id(user_id)
+
+        if UserDB.get_support_appeal_by_id(user_id) > 0:
+            UserDB.dec_support_appeal_by_id(user_id)
     except BaseException:
         pass
 

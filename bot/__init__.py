@@ -118,13 +118,17 @@ async def resolve_appeal(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     try:
         await msg.edit_text(f'{msg.text}\n\nResolved ✅')
-        db.UserDB.dec_support_appeal_by_id(user_id)
+
+        if db.UserDB.get_support_appeal_by_id(user_id) > 0:
+            db.UserDB.dec_support_appeal_by_id(user_id)
     except BaseException:
         pass
 
 def main():
     application = ApplicationBuilder().token(TOKEN).build()
     
+    db.DB.users.update_many({}, {'$set': {'support': 0}})
+
     start_handler = CommandHandler('start', start_command)
     logout_handler = CommandHandler('logout', logout_command)
     menu_handler = CommandHandler('menu', menu.menu_command)

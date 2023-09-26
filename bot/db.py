@@ -46,6 +46,10 @@ class UserDB:
         u = DB.users.find_one(filter={'id': self.id})
         return u['support']
     
+    def get_support_appeal_by_id(id: int):
+        u = DB.users.find_one(filter={'id': id})
+        return u['support']
+    
     def inc_support_appeal(self):
         DB.users.update_one({'id': self.id}, {'$inc': {'support': 1}})
     
