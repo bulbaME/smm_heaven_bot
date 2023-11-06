@@ -8,7 +8,7 @@ from .db import get_user_db, UserDB
 from .misc import STEP, get_user_api, parse_order, parse_error, NEW_ORDER_KEYS_DESCRIPTION, ORDER_KEYS_DESCRIPTION
 from smm_api import parse_response, parse_service_list, SERVICE_TYPES_KEYS
 
-MAX_PAGE_SIZE = 2
+MAX_PAGE_SIZE = 8
 SUPPORT_CHAT_ID = yaml.safe_load(open('credentials.yaml'))['tg']['support_chat_id']
 MAX_SUPPORT_APPEALS = 1
 SUPPORT_APPEAL_TIMEOUT = 21600
