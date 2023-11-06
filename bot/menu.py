@@ -786,6 +786,7 @@ async def support_appeal_timeout(context: ContextTypes.DEFAULT_TYPE):
 async def support_send_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     username = update.effective_user.username
     user_id = update.effective_user.id
+    chat_id = update.effective_chat.id
 
     btn_menu = InlineKeyboardButton('Menu 🕹', callback_data=STEP.MENU.ENTRY)
     keyboard = InlineKeyboardMarkup([[btn_menu]])
@@ -797,7 +798,7 @@ async def support_send_command(update: Update, context: ContextTypes.DEFAULT_TYP
     btn_resolve = InlineKeyboardButton('Resolve ✅', callback_data=12345)
 
     keyboard = InlineKeyboardMarkup([[btn_resolve]])
-    msg = await context.bot.send_message(SUPPORT_CHAT_ID, f'@{username}\nuser_id: {user_id}\n\nSubject: {context.user_data["support_subject"]}\nMessage: {context.user_data["support_message_text"]}', reply_markup=keyboard)
+    msg = await context.bot.send_message(SUPPORT_CHAT_ID, f'@{username}\ntelegram user id: {user_id}\nbot chat id: {chat_id}\n\nSubject: {context.user_data["support_subject"]}\nMessage: {context.user_data["support_message_text"]}', reply_markup=keyboard)
     context.job_queue.run_once(support_appeal_timeout, SUPPORT_APPEAL_TIMEOUT, data=[msg, user_id])
 
     db = get_user_db(context)

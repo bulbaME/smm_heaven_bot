@@ -115,6 +115,8 @@ async def resolve_appeal(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.effective_message
     user_id = msg.text.split('\n')[1]
     user_id = int(user_id.split(':')[1])
+    chat_id = msg.text.split('\n')[2]
+    chat_id = int(chat_id.split(':')[1])
     
     try:
         await msg.edit_text(f'{msg.text}\n\nResolved ✅')
@@ -122,7 +124,8 @@ async def resolve_appeal(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if db.UserDB.get_support_appeal_by_id(user_id) > 0:
             db.UserDB.dec_support_appeal_by_id(user_id)
 
-        context.bot.send_message(user_id, 'Your support appeal has been resolved ✅')
+        context.bot.send
+        context.bot.send_message(chat_id, 'Your support appeal has been resolved ✅')
     except BaseException:
         pass
 
