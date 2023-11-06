@@ -63,7 +63,7 @@ async def track_order_command(update: Update, context: ContextTypes.DEFAULT_TYPE
     btns = []
 
     pages = (len(orders) - 1) // MAX_PAGE_SIZE + 1
-    pages = min(1, pages)
+    pages = max(1, pages)
     current_page = context.user_data['track_orders_page']
     page_size = min(len(orders), MAX_PAGE_SIZE)
     if current_page == pages - 1:
@@ -78,11 +78,11 @@ async def track_order_command(update: Update, context: ContextTypes.DEFAULT_TYPE
     btn_delete = InlineKeyboardButton('Delete Order ➖', callback_data=STEP.MENU.DELETE_ORDER)
     
     pagination = []
-    if current_page != 0 and len(orders) > 0:
+    if current_page != 0:
         btn = InlineKeyboardButton('◀ Previous', callback_data=STEP.MENU.PREV_PAGE)
         pagination.append(btn)
 
-    if current_page != pages and len(orders) > 0:
+    if current_page != pages - 1:
         btn = InlineKeyboardButton('Next ▶', callback_data=STEP.MENU.NEXT_PAGE)
         pagination.append(btn)
 
