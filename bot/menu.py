@@ -8,7 +8,7 @@ from .db import get_user_db, UserDB
 from .misc import STEP, get_user_api, parse_order, parse_error, NEW_ORDER_KEYS_DESCRIPTION, ORDER_KEYS_DESCRIPTION
 from smm_api import parse_response, parse_service_list, SERVICE_TYPES_KEYS
 
-MAX_PAGE_SIZE = 8
+MAX_PAGE_SIZE = 2
 SUPPORT_CHAT_ID = yaml.safe_load(open('credentials.yaml'))['tg']['support_chat_id']
 MAX_SUPPORT_APPEALS = 1
 SUPPORT_APPEAL_TIMEOUT = 21600
@@ -32,13 +32,13 @@ async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['support_message'] = None
 
     btn_track_order = InlineKeyboardButton('Track Orders 📦', callback_data=STEP.MENU.TRACK_ORDERS)
-    btn_new_order = InlineKeyboardButton('Make New Order 📩', callback_data=STEP.MENU.MAKE_ORDER)
-    btn_balance = InlineKeyboardButton('Check Balance 💳', callback_data=STEP.MENU.BALANCE)
-    btn_support = InlineKeyboardButton('Support 📢', callback_data=STEP.MENU.SUPPORT)
+    btn_new_order = InlineKeyboardButton('Make New Order 📥', callback_data=STEP.MENU.MAKE_ORDER)
+    btn_balance = InlineKeyboardButton('Check Balance 💰', callback_data=STEP.MENU.BALANCE)
+    btn_support = InlineKeyboardButton('Support 🧑🏼‍💻', callback_data=STEP.MENU.SUPPORT)
     btn_change_api = InlineKeyboardButton('API key 🔑', callback_data=STEP.MENU.CHANGE_API)
     keyboard = InlineKeyboardMarkup([[btn_track_order], [btn_new_order], [btn_balance], [btn_support, btn_change_api]])
 
-    await context.bot.send_message(chat_id, f'<b>🍃  SMM-HEAVEN BOT  🍃</b>\n', parse_mode=ParseMode.HTML, reply_markup=keyboard)
+    await context.bot.send_message(chat_id, f'<b>🔰  SMM-HEAVEN BOT  🔰</b>\n', parse_mode=ParseMode.HTML, reply_markup=keyboard)
 
     return STEP.MENU.ENTRY
 
@@ -78,17 +78,17 @@ async def track_order_command(update: Update, context: ContextTypes.DEFAULT_TYPE
     btn_delete = InlineKeyboardButton('Delete Order ➖', callback_data=STEP.MENU.DELETE_ORDER)
     
     pagination = []
-    if current_page != 0:
+    if current_page != 0 and len(orders) > 0:
         btn = InlineKeyboardButton('◀ Previous', callback_data=STEP.MENU.PREV_PAGE)
         pagination.append(btn)
 
-    if current_page != pages - 1:
+    if current_page != pages and len(orders) > 0:
         btn = InlineKeyboardButton('Next ▶', callback_data=STEP.MENU.NEXT_PAGE)
         pagination.append(btn)
 
     btn_menu = InlineKeyboardButton('Menu 🕹', callback_data=STEP.MENU.ENTRY)
-    btns.append([btn_add, btn_delete])
     btns.append(pagination)
+    btns.append([btn_add, btn_delete])
     btns.append([btn_menu])
 
     keyboard = InlineKeyboardMarkup(btns)
@@ -242,10 +242,10 @@ async def make_order_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
     msg: Message
     if context.user_data['new_order_message'] == None:
-        msg = await context.bot.send_message(chat_id, f'<b>🧮  SELECT CATEGORY</b>\nYou have to select service category for your new order.', reply_markup=keyboard, parse_mode=ParseMode.HTML)
+        msg = await context.bot.send_message(chat_id, f'<b>🗂  SELECT CATEGORY</b>\nYou have to select service category for your new order.', reply_markup=keyboard, parse_mode=ParseMode.HTML)
     else:
         msg = context.user_data['new_order_message']
-        msg = await msg.edit_text(f'<b>🧮  SELECT CATEGORY</b>\nYou have to select service category for your new order.', reply_markup=keyboard, parse_mode=ParseMode.HTML)
+        msg = await msg.edit_text(f'<b>🗂  SELECT CATEGORY</b>\nYou have to select service category for your new order.', reply_markup=keyboard, parse_mode=ParseMode.HTML)
     
     context.user_data['new_order_message'] = msg
 
@@ -256,7 +256,7 @@ async def make_order_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
 async def category_select_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     services = context.user_data['services']
-    btn_menu = InlineKeyboardButton('Go Back 🔽', callback_data=STEP.MENU.NEW_ORDER_SELECT_CATEGORY)
+    btn_menu = InlineKeyboardButton('Back 🔽', callback_data=STEP.MENU.NEW_ORDER_SELECT_CATEGORY)
     
     if context.user_data['category'] == None:
         category_i = int(update.callback_query.data) - 1000
@@ -688,13 +688,13 @@ async def support_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['support_message_text'] = None
 
     btn_pay = InlineKeyboardButton('Payment 💳', callback_data=500)
-    btn_speed = InlineKeyboardButton('Speed Up 💨', callback_data=500+1)
+    btn_speed = InlineKeyboardButton('Speed Up 🚀', callback_data=500+1)
     btn_refill = InlineKeyboardButton('Refill 🔄', callback_data=500+2)
     btn_cancel = InlineKeyboardButton('Cancel Order 🚫', callback_data=500+3)
-    btn_other = InlineKeyboardButton('Other 💢', callback_data=500+4)
+    btn_other = InlineKeyboardButton('Other ⁉️', callback_data=500+4)
     btn_menu = InlineKeyboardButton('Menu 🕹', callback_data=STEP.MENU.ENTRY)
 
-    keyboard = InlineKeyboardMarkup([[btn_pay], [btn_speed], [btn_refill], [btn_cancel], [btn_other], [btn_menu]])
+    keyboard = InlineKeyboardMarkup([[btn_pay, btn_speed], [btn_refill, btn_other], [btn_cancel], [btn_menu]])
 
     msg = context.user_data['support_message']
     if msg == None:
@@ -723,13 +723,13 @@ async def support_topic_command(update: Update, context: ContextTypes.DEFAULT_TY
         case 0:
             subject = '💳 Payment'
         case 1:
-            subject = '💨 Speed Up'
+            subject = '🚀 Speed Up'
         case 2:
             subject = '🔄 Refill'
         case 3:
             subject = '🚫 Cancel Order'
         case _:
-            subject = '💢 Other'
+            subject = '⁉️ Other'
 
     btn_add_msg = InlineKeyboardButton('Add Message 💬', callback_data=STEP.MENU.SUPPORT_SET_MESSAGE)
     if context.user_data['support_message_text'] != None:

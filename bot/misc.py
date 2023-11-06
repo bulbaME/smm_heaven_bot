@@ -61,7 +61,7 @@ NEW_ORDER_KEYS_DESCRIPTION = {
 
 ORDER_KEYS_DESCRIPTION = {
     'charge': '💳 Charge',
-    'start_count': '🔢 Start Count',
+    'start_count': '⏱ Start Count',
     'status': '🧾 Status',
     'remains': '👥 Remains',
 }

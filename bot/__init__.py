@@ -61,7 +61,7 @@ async def get_key_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         db.set_api_key(key)
 
         commands = [
-            BotCommand('menu', 'Menu 🍃'),
+            BotCommand('menu', 'Menu 🔰'),
             BotCommand('logout', 'Logout 🚫'),
         ]
         await context.bot.set_my_commands(commands, scope=telegram.BotCommandScopeChat(chat_id))
