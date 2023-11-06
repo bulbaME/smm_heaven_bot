@@ -124,7 +124,7 @@ async def resolve_appeal(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if db.UserDB.get_support_appeal_by_id(user_id) > 0:
             db.UserDB.dec_support_appeal_by_id(user_id)
 
-        context.bot.send_message(chat_id, 'Your support appeal has been resolved ✅')
+        await context.bot.send_message(chat_id, 'Your support appeal has been resolved ✅')
     except BaseException:
         pass
 
